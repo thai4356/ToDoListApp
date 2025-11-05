@@ -39,3 +39,5 @@ pipeline {
 }
 
 
+1 la xoa 
+0 la van hoat dong

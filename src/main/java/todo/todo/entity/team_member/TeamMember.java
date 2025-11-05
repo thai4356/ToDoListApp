@@ -35,4 +35,5 @@ public class TeamMember extends BaseEntity{
     public enum Role {
         owner, admin, member
     }
+
 }

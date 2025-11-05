@@ -38,6 +38,6 @@ public abstract class BaseEntity {
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
 
+    @Column(columnDefinition = "boolean default false")
     private boolean deleted = false;
-
 }

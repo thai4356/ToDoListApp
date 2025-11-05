@@ -40,7 +40,18 @@ public class TeamMemberRepositoryImpl extends BaseRepository implements TeamMemb
                                 .where(
                                                 qTeamMember.user.id.eq(userId)
                                                                 .and(qTeamMember.team.id.eq(teamId))
-                                                                .and(qTeamMember.deleted.isTrue()))
+                                                                .and(qTeamMember.deleted.isFalse()))
                                 .fetchOne();
+        }
+
+        @Override
+        public List<TeamMember> findActiveByTeam(int teamId) {
+                return query()
+                                .select(qTeamMember)
+                                .from(qTeamMember)
+                                .where(
+                                                qTeamMember.team.id.eq(teamId)
+                                                                .and(qTeamMember.deleted.isFalse()))
+                                .fetch();
         }
 }

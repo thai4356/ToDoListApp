@@ -11,5 +11,5 @@ public interface TeamMemberRepositoryCustom {
     List<TeamMember> findByTeam_IdAndDeletedIsNull(int teamId);
     TeamMember findByUserId(int userId);
     TeamMember findByUserIdAndTeamId(int userId, int teamId);
-
+    List<TeamMember> findActiveByTeam(int teamId);
 }

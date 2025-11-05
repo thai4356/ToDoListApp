@@ -1,5 +1,6 @@
 package todo.todo.service.team;
 
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
@@ -75,21 +76,48 @@ public class TeamServiceImpl extends BaseService implements TeamService {
     }
 
     @Override
-    public void UpdateTeam(AddTeamBaseReq request, int foundId, int currentUserId) {
-        Team currentTeam = teamRepository.getTeamToUpdate(foundId);
+public TeamDetailRes UpdateTeam(AddTeamBaseReq request, int foundId, int currentUserId) {
+    Team team = teamRepository.findById(foundId)
+            .orElseThrow(() -> new RuntimeException("Team not found: " + foundId));
 
-        if (request.getName() != null && !request.getName().isEmpty()) {
-            currentTeam.setName(request.getName());
-        }
-        if (request.getDescription() != null && !request.getDescription().isEmpty()) {
-            currentTeam.setDescription(request.getDescription());
-        }
-        if (request.getUser() != null && request.getUser() != null) {
-            User currentUser = teamRepository.findByOwnerId(currentUserId);
-            currentTeam.setOwner(currentUser);
-        }
-        teamRepository.save(currentTeam);
+    if (request.getName() != null && !request.getName().isEmpty()) {
+        team.setName(request.getName());
     }
+    if (request.getDescription() != null && !request.getDescription().isEmpty()) {
+        team.setDescription(request.getDescription());
+    }
+
+    teamRepository.save(team);
+
+    List<TeamMember> members = teamMemberRepository.findActiveByTeam(team.getId());
+    List<TeamMemberRes> memberDtos = members.stream()
+            .map(m -> TeamMemberRes.builder()
+                    .id(m.getUser().getId())
+                    .fullName(m.getUser().getFullName())
+                    .email(m.getUser().getEmail())
+                    .avatarUrl(m.getUser().getAvatarUrl())
+                    .role(m.getRole().name())
+                    .joinedAt(m.getCreatedAt() == null ? null
+                            : m.getCreatedAt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
+                    .build())
+            .toList();
+
+    User owner = team.getOwner();
+    return TeamDetailRes.builder()
+            .id(team.getId())
+            .name(team.getName())
+            .description(team.getDescription())
+            .owner(UserDetailRes.builder()
+                    .id(owner != null ? owner.getId() : 0)
+                    .fullname(owner != null ? owner.getFullName() : null)
+                    .email(owner != null ? owner.getEmail() : null)
+                    .avatarUrl(owner != null ? owner.getAvatarUrl() : null)
+                    .build())
+            .members(memberDtos)
+            .createdAt(team.getCreatedAt())
+            .updatedAt(team.getUpdatedAt())
+            .build();
+}
 
     @Override
     public TeamDetailRes DeleteTeam(int teamId, int currentUserId) {
@@ -133,13 +161,12 @@ public class TeamServiceImpl extends BaseService implements TeamService {
     }
 
     @Override
-    public TeamMemberRes addMemberToTeam(int teamId, int userId,  int currentUserId) {
+    public TeamMemberRes addMemberToTeam(int teamId, int userId, int currentUserId) {
 
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found: " + teamId));
 
         TeamMember currentUserMembership = teamMemberRepository.findByUserIdAndTeamId(currentUserId, teamId);
-
 
         if (currentUserMembership == null) {
             throw new RuntimeException("You are not in this team");
@@ -175,16 +202,118 @@ public class TeamServiceImpl extends BaseService implements TeamService {
     }
 
     @Override
-    public void updateMemberRole(int teamId, int userId, String newRole) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'updateMemberRole'");
+    public TeamMemberRes updateMemberRole(int teamId, int userId, String newRole) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found: " + teamId));
+
+        TeamMember member = teamMemberRepository.findByUserIdAndTeamId(userId, teamId);
+
+        if (member.getTeam() == null || Boolean.TRUE.equals(member.isDeleted())) {
+            throw new RuntimeException("Member not found in this team");
+        }
+
+        TeamMember.Role roleEnum;
+        try {
+            roleEnum = TeamMember.Role.valueOf(newRole.trim().toLowerCase());
+        } catch (IllegalArgumentException ex) {
+            roleEnum = TeamMember.Role.valueOf(newRole.trim().toUpperCase());
+        }
+
+        // if (member.getRole() == TeamMember.Role.owner && roleEnum !=
+        // TeamMember.Role.owner) {
+        // throw new RuntimeException("Cannot change role of team owner");
+        // }
+
+        member.setRole(roleEnum);
+        member.setUpdatedAt(new Date());
+        teamMemberRepository.save(member);
+
+        User u = member.getUser();
+
+        return TeamMemberRes.builder()
+                .id(u.getId())
+                .fullName(u.getFullName())
+                .email(u.getEmail())
+                .avatarUrl(u.getAvatarUrl())
+                .role(roleEnum.name())
+                .joinedAt(member.getCreatedAt() != null
+                        ? member.getCreatedAt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+                        : null)
+                .build();
     }
 
     @Override
     public TeamDetailRes getTeamDetail(int teamId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getTeamDetail'");
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found: " + teamId));
+
+        List<TeamMember> members = teamMemberRepository.findActiveByTeam(teamId);
+
+        List<TeamMemberRes> memberDtos = members.stream()
+                .map(m -> TeamMemberRes.builder()
+                        .id(m.getUser().getId())
+                        .fullName(m.getUser().getFullName())
+                        .email(m.getUser().getEmail())
+                        .avatarUrl(m.getUser().getAvatarUrl())
+                        .role(m.getRole().name())
+                        .build())
+                .toList();
+
+        User owner = team.getOwner();
+
+        return TeamDetailRes.builder()
+                .id(team.getId())
+                .name(team.getName())
+                .description(team.getDescription())
+                .owner(UserDetailRes.builder()
+                        .id(owner != null ? owner.getId() : 0)
+                        .fullname(owner != null ? owner.getFullName() : null)
+                        .email(owner != null ? owner.getEmail() : null)
+                        .avatarUrl(owner != null ? owner.getAvatarUrl() : null)
+                        .build())
+                .members(memberDtos)
+                .createdAt(team.getCreatedAt())
+                .updatedAt(team.getUpdatedAt())
+                .build();
     }
 
-    
+    @Override
+    public TeamMemberRes deleteMemberFromTeam(int teamId, int userId, int currentUserId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found: " + teamId));
+
+        TeamMember currentUserMembership = teamMemberRepository.findByUserIdAndTeamId(currentUserId, teamId);
+        System.out.println(currentUserMembership.getId());
+        System.out.println(currentUserMembership.getRole());
+        System.out.println(currentUserMembership.getTeam());
+        if (currentUserMembership == null || currentUserMembership.isDeleted()) {
+            throw new RuntimeException("You are not in this team");
+        }
+        if (currentUserMembership.getRole() == TeamMember.Role.member) {
+            throw new RuntimeException("You don't have permission to remove members");
+        }
+
+        TeamMember target = teamMemberRepository.findByUserIdAndTeamId(userId, teamId);
+        if (target == null || Boolean.TRUE.equals(target.isDeleted())) {
+            throw new RuntimeException("Member not found in this team");
+        }
+
+        // Không cho xóa Owner
+        if (target.getRole() == TeamMember.Role.owner) {
+            throw new RuntimeException("Cannot remove the team owner");
+        }
+
+        target.setDeleted(true);
+        target.setUpdatedAt(new Date());
+        teamMemberRepository.save(target);
+
+        return TeamMemberRes.builder()
+                .id(target.getId())
+                .fullName(target.getUser().getFullName())
+                .email(target.getUser().getEmail())
+                .avatarUrl(target.getUser().getAvatarUrl())
+                .role(target.getRole().name())
+                .build();
+    }
+
 }
