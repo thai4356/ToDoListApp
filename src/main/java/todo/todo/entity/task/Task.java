@@ -8,6 +8,7 @@ import org.hibernate.annotations.DynamicUpdate;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import todo.todo.entity.BaseEntity;
 import todo.todo.entity.teams.Team;
 import todo.todo.entity.user.User;
 
@@ -20,11 +21,7 @@ import todo.todo.entity.user.User;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-public class Task {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Task extends BaseEntity {
 
     // team_id
     @ManyToOne(fetch = FetchType.LAZY)
@@ -57,12 +54,7 @@ public class Task {
 
     private LocalDate dueDate;
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
+    // vì bảng có deleted_at
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
