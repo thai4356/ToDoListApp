@@ -54,10 +54,6 @@ public class Task extends BaseEntity {
 
     private LocalDate dueDate;
 
-    // vì bảng có deleted_at
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
-
     public enum Status {
         todo, in_progress, done, blocked
     }

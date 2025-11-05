@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
+
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import todo.todo.entity.task.QTask;
@@ -24,10 +25,7 @@ public class TaskRepositoryImpl implements TaskRepositoryCustom {
         return query()
                 .select(t)
                 .from(t)
-                .where(
-                        t.team.id.eq(teamId)
-                                // .and(t.id.isFalse())
-                )
+                .where(t.team.id.eq(teamId).and(t.deleted.isFalse()))
                 .fetch();
     }
 
@@ -37,23 +35,15 @@ public class TaskRepositoryImpl implements TaskRepositoryCustom {
         return query()
                 .select(t)
                 .from(t)
-                .where(
-                        t.assignee.id.eq(assigneeId)
-                                .and(t.deleted.isFalse())
-                )
+                .where(t.assignee.id.eq(assigneeId).and(t.deleted.isFalse()))
                 .fetch();
     }
 
     @Override
     public List<Task> search(Integer teamId, Integer assigneeId, String status, String priority,
                              LocalDate dueFrom, LocalDate dueTo) {
-
         QTask t = QTask.task;
-
-        var q = query()
-                .select(t)
-                .from(t)
-                .where(t.deleted.isFalse());
+        var q = query().select(t).from(t).where(t.deleted.isFalse());
 
         if (teamId != null) q = q.where(t.team.id.eq(teamId));
         if (assigneeId != null) q = q.where(t.assignee.id.eq(assigneeId));
