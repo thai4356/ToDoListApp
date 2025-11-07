@@ -15,4 +15,6 @@ public interface TaskRepositoryCustom {
     List<Task> findByAssignee(int assigneeId);
 
     List<Task> search(Integer teamId, Integer assigneeId, String status, String priority, LocalDate dueFrom, LocalDate dueTo);
+
+    int findTeamIdByTaskId(int taskId) ;
 }

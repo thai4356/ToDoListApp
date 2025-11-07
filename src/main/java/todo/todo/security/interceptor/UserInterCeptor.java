@@ -1,14 +1,13 @@
 package todo.todo.security.interceptor;
 
-import org.apache.logging.log4j.util.Strings;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import todo.todo.component.converter.Translator;
 import todo.todo.entity.user.User;
@@ -19,32 +18,61 @@ import todo.todo.security.SecurityContexts;
 
 @Log4j2
 @Component
+@RequiredArgsConstructor
 public class UserInterCeptor implements HandlerInterceptor {
 
-    @Autowired
-    private JwtTokenProvider jwtTokenProvider;
-    @Autowired
-    private UserRepository userRepository;
+    private static final String AUTH = "Authorization";
+    private static final String BEARER = "Bearer ";
+
+    private final JwtTokenProvider jwtTokenProvider;
+    private final UserRepository userRepository;
 
     @Override
-    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws Exception {
-        BusinessException exception = new BusinessException(Translator.toLocale("login_required"), HttpStatus.UNAUTHORIZED);
-        String vendorCode = request.getHeader("Authorization");
-        if (Strings.isEmpty(vendorCode)) {
-            throw exception;
+    public boolean preHandle(@NotNull HttpServletRequest request,
+            @NotNull HttpServletResponse response,
+            @NotNull Object handler) throws Exception {
+
+        BusinessException unauthorized = new BusinessException(Translator.toLocale("login_required"),
+                HttpStatus.UNAUTHORIZED);
+
+        String auth = request.getHeader(AUTH);
+        if (auth == null || auth.isBlank() || !auth.startsWith(BEARER)) {
+            log.debug("[AUTH] Missing/invalid Authorization header");
+            throw unauthorized;
         }
-        String[] header = vendorCode.split(" ");
-        if (header.length != 2) {
-            throw exception;
+
+        String token = auth.substring(BEARER.length()).trim();
+        boolean valid = false;
+        try {
+            valid = jwtTokenProvider.validateTokenRs256(token);
+        } catch (Exception ex) {
+            log.debug("[AUTH] JWT validate exception: {}", ex.getMessage());
         }
-        String token = header[1];
-        if (jwtTokenProvider.validateTokenRs256(token)) {
-            Integer sub = Integer.parseInt(jwtTokenProvider.getSubIdFromJwtRs256(token));
-            SecurityContexts.newContext();
-            User user = userRepository.findById(sub).orElseThrow(()-> exception);
-            SecurityContexts.getContext().setData(user);
-            return true;
+        if (!valid) {
+            log.debug("[AUTH] JWT validation failed");
+            throw unauthorized;
         }
-        throw exception;
+
+        String subStr;
+        int userId;
+        try {
+            subStr = jwtTokenProvider.getSubIdFromJwtRs256(token);
+            userId = Integer.parseInt(subStr);
+        } catch (Exception ex) {
+            log.debug("[AUTH] Invalid sub claim: {}", ex.getMessage());
+            throw unauthorized;
+        }
+
+        User user = userRepository.findById(userId);
+        if (user == null) {
+            log.debug("[AUTH] User not found: {}", userId);
+            throw unauthorized;
+        }
+
+        SecurityContexts.newContext();
+        SecurityContexts.getContext().setData(user);
+
+        log.debug("[AUTH] OK userId={}, path={}", user.getId(), request.getRequestURI());
+        return true;
     }
 }

@@ -23,6 +23,7 @@ import todo.todo.exceptions.BusinessException;
 import todo.todo.repository.otp.OtpRepository;
 import todo.todo.repository.user.UserRepository;
 import todo.todo.security.JwtTokenProvider;
+import todo.todo.security.SecurityContexts;
 import todo.todo.service.BaseService;
 import todo.todo.util.Util;
 
@@ -58,6 +59,10 @@ public class UserServiceImpl extends BaseService implements UserService {
             throw new BusinessException(Translator.toLocale("login_fail"),
                     HttpStatus.UNAUTHORIZED);
         }
+
+        SecurityContexts.newContext(); 
+        SecurityContexts.getContext().setData(user); 
+        System.out.println("User in SecurityContexts: " + SecurityContexts.getContext().getData());
 
         UserDetailRes userLoginRes = getUserRes(user);
         userLoginRes

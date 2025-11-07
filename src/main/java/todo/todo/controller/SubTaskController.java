@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,45 +30,46 @@ public class SubTaskController {
         return ResponseEntity.ok(subTaskService.listActiveByTask(taskId));
     }
 
+    // Tạo subtask (dùng AddSubTaskReq)
     @PostMapping
     public ResponseEntity<SubtaskDetailRes> create(@RequestBody AddSubTaskReq req) {
-        if (req == null)
-            return ResponseEntity.badRequest().build();
-        SubtaskDetailRes res = subTaskService.create(req.getTaskId(), req.getTitle());
+        // AddSubTaskReq: { taskId, title, orderIndex (optional - service tự set) }
+        return ResponseEntity.ok(subTaskService.create(req.getTaskId(), req.getTitle()));
+    }
+
+    // Cập nhật subtask (dùng UpdateSubTaskReq)
+    @PatchMapping("/{subTaskId}")
+    public ResponseEntity<SubtaskDetailRes> update(@PathVariable int subTaskId,
+            @RequestBody UpdateSubTaskReq req) {
+        SubtaskDetailRes res = null;
+
+        // đổi tiêu đề nếu có
+        if (req.getTitle() != null && !req.getTitle().trim().isEmpty()) {
+            res = subTaskService.rename(subTaskId, req.getTitle().trim());
+        }
+
+        // set done/undone nếu có
+        if (req.getIsDone() != null) {
+            res = subTaskService.setDone(subTaskId, req.getIsDone());
+        }
+
+        // orderIndex: controller này KHÔNG xử lý reorder đơn lẻ.
+        // Dùng endpoint riêng /task/{taskId}/reorder với danh sách id theo thứ tự.
+
         return ResponseEntity.ok(res);
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<SubtaskDetailRes> update(
-            @PathVariable int id,
-            @RequestBody UpdateSubTaskReq req) {
-
-        SubtaskDetailRes result = null;
-
-        if (req.getTitle() != null && !req.getTitle().isEmpty()) {
-            result = subTaskService.rename(id, req.getTitle());
-        }
-
-        if (req.getIsDone() != null) {
-            result = subTaskService.setDone(id, req.getIsDone());
-        }
-
-        if (req.getOrderIndex() != null && result != null) {
-
-        }
-
-        return ResponseEntity.ok(result);
+    // Xoá mềm subtask
+    @DeleteMapping("/{subTaskId}")
+    public ResponseEntity<Void> delete(@PathVariable int subTaskId) {
+        boolean ok = subTaskService.softDelete(subTaskId);
+        return ok ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
 
-    @PutMapping("/task/{taskId}/reorder")
-    public ResponseEntity<List<SubtaskDetailRes>> reorder(
-            @PathVariable int taskId,
-            @RequestBody List<Integer> orderedIds) {
-        return ResponseEntity.ok(subTaskService.reorder(taskId, orderedIds));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Boolean> delete(@PathVariable int id) {
-        return ResponseEntity.ok(subTaskService.softDelete(id));
+    // Reorder theo danh sách id (tuỳ chọn)
+    @PatchMapping("/task/{taskId}/reorder")
+    public ResponseEntity<List<SubtaskDetailRes>> reorder(@PathVariable int taskId,
+            @RequestBody List<Integer> orderedSubTaskIds) {
+        return ResponseEntity.ok(subTaskService.reorder(taskId, orderedSubTaskIds));
     }
 }
