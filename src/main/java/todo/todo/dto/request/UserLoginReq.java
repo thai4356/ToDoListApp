@@ -8,6 +8,6 @@ public class UserLoginReq {
     @NotBlank
     String email;
     @NotBlank
-    String passwordHased;
+    String passwordHashed;
 
 }

@@ -4,7 +4,6 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;

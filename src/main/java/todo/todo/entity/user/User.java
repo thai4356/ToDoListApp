@@ -23,7 +23,7 @@ import todo.todo.entity.BaseEntity;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Table(name = "users")
 public class User extends BaseEntity {
-
+    
     String fullName;
     String email;
     String code;

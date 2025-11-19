@@ -13,7 +13,7 @@ import todo.todo.repository.BaseRepository;
 @Repository
 public class OtpRepositoryImpl extends BaseRepository implements OtpRepositoryCustom {
     private final QOtp qOtp = QOtp.otp1;
-    
+
     @Override
     @Transactional
     public void updateStatusVerify(SendOtpReq request) {
@@ -31,4 +31,19 @@ public class OtpRepositoryImpl extends BaseRepository implements OtpRepositoryCu
                 .execute();
 
     }
+
+    @Override
+    public int findByEmail(String email) {
+        Integer result = query()
+                .select(qOtp.attemptCount)
+                .from(qOtp)
+                .where(
+                        qOtp.email.eq(email)
+                                .and(qOtp.deleted.isFalse()))
+                .orderBy(qOtp.createdAt.desc()) 
+                .fetchFirst();
+
+        return result == null ? 0 : result;
+    }
+
 }

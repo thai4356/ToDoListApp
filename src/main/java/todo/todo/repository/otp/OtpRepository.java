@@ -6,5 +6,5 @@ import todo.todo.entity.otp.Otp;
 
 @Repository
 public interface OtpRepository extends JpaRepository<Otp, Integer>, OtpRepositoryCustom{
-
+    
 }

@@ -66,7 +66,14 @@ public class OtpServiceImpl extends BaseService implements OtpService {
         otp.setOtp(Util.randomString(6, Constants.DIGITS));
         otp.setStatus(VerifyStatus.VERIFY_PENDING);
         otp.setCreatedAt(new Date());
+        otp.setPurpose(request.getPurpose().toValue());
+        otp.setAttemptCount(otpRepository.findByEmail(request.getEmail())+1);
+        
         otpRepository.save(otp);
+
+        System.out.println(request.getEmail());
+        System.out.println(request.getType());
+        System.out.println(request.getPurpose());
 
         SendOtp result = new SendOtp();
         switch (request.getType()) {

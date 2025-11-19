@@ -23,12 +23,14 @@ public class Otp extends BaseEntity {
     String email;
 
     @Column(name = "attempt_count")
-    int attemptCount = 3;
+    int attemptCount = 0;
 
     @Column(name = "send_type", columnDefinition = "INT")
     SendType sendType;
 
+    @Column(name = "purpose", columnDefinition = "INT")
+    int purpose;
+
     @Column(name = "status", columnDefinition = "INT")
     VerifyStatus status;
-
 }

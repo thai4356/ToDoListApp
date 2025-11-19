@@ -39,6 +39,10 @@ public class UserServiceImpl extends BaseService implements UserService {
 
     private final int OTP_EXPIRY_IN_MINUTES = 5;
 
+    private int uid() {
+        return getUser().getId();
+    }
+
     public UserServiceImpl(JwtTokenProvider jwtTokenProvider,
             OtpRepository otpRepository,
             PasswordEncoder passwordEncoder,
@@ -52,16 +56,16 @@ public class UserServiceImpl extends BaseService implements UserService {
     @Override
     public UserDetailRes login(UserLoginReq request) {
         System.out.println("Email request: " + request.getEmail());
-        System.out.println("Password request: " + request.getPasswordHased());
+        System.out.println("Password request: " + request.getPasswordHashed());
         User user = userRepository.loginByEmail(request.getEmail());
-        if (user == null || !passwordEncoder.matches(request.getPasswordHased(),
+        if (user == null || !passwordEncoder.matches(request.getPasswordHashed(),
                 user.getPasswordHash())) {
             throw new BusinessException(Translator.toLocale("login_fail"),
                     HttpStatus.UNAUTHORIZED);
         }
 
-        SecurityContexts.newContext(); 
-        SecurityContexts.getContext().setData(user); 
+        SecurityContexts.newContext();
+        SecurityContexts.getContext().setData(user);
         System.out.println("User in SecurityContexts: " + SecurityContexts.getContext().getData());
 
         UserDetailRes userLoginRes = getUserRes(user);
@@ -115,6 +119,8 @@ public class UserServiceImpl extends BaseService implements UserService {
             otpRepository.save(sessionAuth);
         }
 
+        System.out.println(request.getFullname());
+
         String code = generateCode(8);
         User user = new User();
         user.setCode(code);
@@ -123,7 +129,6 @@ public class UserServiceImpl extends BaseService implements UserService {
         user.setCreatedAt(new Date());
         user.setUpdatedAt(new Date());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-
         userRepository.save(user);
 
         UserDetailRes userLoginRes = getUserRes(user);
@@ -141,5 +146,11 @@ public class UserServiceImpl extends BaseService implements UserService {
             exists = userRepository.existsByCode(code);
         } while (exists);
         return code;
+    }
+
+    @Override
+    public User getUserByEmail () {
+        User user = getUser();
+        return user;
     }
 }

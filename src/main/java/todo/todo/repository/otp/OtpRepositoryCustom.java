@@ -4,4 +4,5 @@ import todo.todo.dto.request.otp.SendOtpReq;
 
 public interface OtpRepositoryCustom {
        void updateStatusVerify (SendOtpReq request);
+       int findByEmail (String email);
 }

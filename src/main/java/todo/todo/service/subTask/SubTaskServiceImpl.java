@@ -45,10 +45,6 @@ public class SubTaskServiceImpl extends BaseService implements SubTaskService {
     @Override
     public SubtaskDetailRes create(int taskId, String title) {
         int uid = uid();
-        System.out.println("========= DEBUG SubTaskService.create =========");
-        System.out.println("uid=" + uid + " | taskId=" + taskId + " | titleRaw=" + title);
-        System.out.println("UserCtx=" + todo.todo.security.SecurityContexts.getContext().getData());
-        System.out.println("===============================================");
 
         Integer teamId = null;
         try {
@@ -72,9 +68,9 @@ public class SubTaskServiceImpl extends BaseService implements SubTaskService {
 
         try {
             guard.requireOwnerAdminForSubTask(uid, taskId);
-            System.out.println("[GUARD] Passed permission check ✅");
+            System.out.println("[GUARD] Passed permission check ");
         } catch (Exception e) {
-            System.out.println("[GUARD] Permission check failed ❌ → " + e.getMessage());
+            System.out.println("[GUARD] Permission check failed " + e.getMessage());
             throw e;
         }
 
