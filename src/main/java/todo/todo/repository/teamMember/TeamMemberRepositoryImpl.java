@@ -33,7 +33,7 @@ public class TeamMemberRepositoryImpl extends BaseRepository implements TeamMemb
                 return queryFactory
                                 .selectFrom(qTeamMember)
                                 .where(qTeamMember.team.id.eq(teamId)
-                                                .and(qTeamMember.deleted.isNull()))
+                                                .and(qTeamMember.deleted.isFalse()))
                                 .fetch();
         }
 
@@ -42,7 +42,7 @@ public class TeamMemberRepositoryImpl extends BaseRepository implements TeamMemb
                 return queryFactory
                                 .selectFrom(qTeamMember)
                                 .where(qTeamMember.user.id.eq(userId)
-                                                .and(qTeamMember.deleted.isNull()))
+                                                .and(qTeamMember.deleted.isFalse()))
                                 .fetchOne();
         }
 
@@ -52,7 +52,7 @@ public class TeamMemberRepositoryImpl extends BaseRepository implements TeamMemb
                                 .selectFrom(qTeamMember)
                                 .where(qTeamMember.user.id.eq(userId)
                                                 .and(qTeamMember.team.id.eq(teamId))
-                                                .and(qTeamMember.deleted.isNull()))
+                                                .and(qTeamMember.deleted.isFalse()))
                                 .fetchOne();
         }
 
@@ -61,7 +61,7 @@ public class TeamMemberRepositoryImpl extends BaseRepository implements TeamMemb
                 return queryFactory
                                 .selectFrom(qTeamMember)
                                 .where(qTeamMember.team.id.eq(teamId)
-                                                .and(qTeamMember.deleted.isNull()))
+                                                .and(qTeamMember.deleted.isFalse()))
                                 .fetch();
         }
 
@@ -74,7 +74,7 @@ public class TeamMemberRepositoryImpl extends BaseRepository implements TeamMemb
                                                 qTeamMember.user.id.eq(userId)
                                                                 .and(qTeamMember.team.id.eq(teamId))
                                                                 .and(qTeamMember.role.in(roles))
-                                                                .and(qTeamMember.deleted.isNull()
+                                                                .and(qTeamMember.deleted.isFalse()
                                                                                 .or(qTeamMember.deleted.isFalse())))
                                 .fetchFirst();
                 return found != null;

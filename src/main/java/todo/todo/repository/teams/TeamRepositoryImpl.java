@@ -68,7 +68,7 @@ public class TeamRepositoryImpl extends BaseRepository implements TeamRepository
                 .from(qTeamMember)
                 .where(
                         qTeamMember.team.id.eq(teamId),
-                        qTeamMember.deleted.isTrue())
+                        qTeamMember.deleted.eq(false))
                 .fetch();
     }
 
@@ -79,10 +79,10 @@ public class TeamRepositoryImpl extends BaseRepository implements TeamRepository
                 .from(qTeam)
                 .leftJoin(qTeamMember).on(qTeamMember.team.id.eq(qTeam.id))
                 .where(
-                        qTeam.owner.id.eq(userId) // owner
-                                .or(qTeamMember.user.id.eq(userId)) // member
+                        qTeam.owner.id.eq(userId) 
+                                .or(qTeamMember.user.id.eq(userId)) 
                 )
-                .distinct() // tránh duplicate do join
+                .distinct()
                 .fetch();
 
         if (teams.isEmpty()) {

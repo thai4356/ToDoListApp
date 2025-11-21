@@ -1,5 +1,8 @@
 package todo.todo.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,12 +15,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import todo.todo.dto.request.team.AddTeamBaseReq;
 import todo.todo.dto.request.teammember.AddMemberReq;
 import todo.todo.dto.response.team.TeamDetailRes;
 import todo.todo.dto.response.teamMember.TeamMemberRes;
+import todo.todo.exceptions.BusinessException;
+import todo.todo.security.JwtTokenProvider;
 import todo.todo.service.team.TeamService;
 
 @RestController
@@ -25,8 +31,10 @@ import todo.todo.service.team.TeamService;
 public class TeamController {
 
     private final TeamService teamService;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public TeamController(TeamService teamService) {
+    public TeamController(JwtTokenProvider jwtTokenProvider, TeamService teamService) {
+        this.jwtTokenProvider = jwtTokenProvider;
         this.teamService = teamService;
     }
 
@@ -66,7 +74,7 @@ public class TeamController {
             @RequestParam int currentUserId,
             @RequestBody @Valid AddMemberReq req) {
         return ResponseEntity.ok(
-                teamService.addMemberToTeam(teamId, req.getUserId(), currentUserId));
+                teamService.addMemberToTeam(teamId, req.getEmail(), currentUserId));
     }
 
     @GetMapping("/{id}")
@@ -94,8 +102,32 @@ public class TeamController {
     }
 
     @GetMapping("/by-user")
-    public ResponseEntity<TeamDetailRes> getTeamByUser(
-            @RequestParam int userId) {
-        return ResponseEntity.ok(teamService.getTeamByUser(userId));
+    public ResponseEntity<List<TeamDetailRes>> getTeamsByUser(HttpServletRequest request) {
+
+        // 1. Lấy JWT từ header Authorization: Bearer <token>
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new BusinessException("Thiếu header Authorization");
+        }
+        String token = authHeader.substring(7); // bỏ "Bearer "
+
+        Map<String, Object> payload = jwtTokenProvider.getPayload(token);
+        System.out.println(payload);
+        Object sub = payload.get("sub");
+        System.out.println(sub);
+        if (sub == null) {
+            throw new BusinessException("Token không chứa subject (sub)");
+        }
+
+        int userId;
+        try {
+            userId = Integer.parseInt(sub.toString());
+        } catch (NumberFormatException e) {
+            throw new BusinessException("Subject trong token không phải số userId hợp lệ");
+        }
+
+        List<TeamDetailRes> res = teamService.getTeamsByUser(userId);
+        return ResponseEntity.ok(res);
     }
+
 }

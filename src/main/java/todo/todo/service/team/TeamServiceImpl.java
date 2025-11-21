@@ -160,12 +160,14 @@ public class TeamServiceImpl extends BaseService implements TeamService {
     }
 
     @Override
-    public TeamMemberRes addMemberToTeam(int teamId, int userId, int currentUserId) {
+    public TeamMemberRes addMemberToTeam(int teamId, String email, int currentUserId) {
 
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found: " + teamId));
 
         TeamMember currentUserMembership = teamMemberRepository.findByUserIdAndTeamId(currentUserId, teamId);
+        System.out.println(currentUserMembership.getId());
+        System.out.println(currentUserMembership.getTeam());
 
         if (currentUserMembership == null) {
             throw new RuntimeException("You are not in this team");
@@ -175,9 +177,9 @@ public class TeamServiceImpl extends BaseService implements TeamService {
             throw new RuntimeException("You don't have permission to add new member");
         }
 
-        User newUser = userRepository.findById(userId);
+        User newUser = userRepository.getUserByEmail(email);
         if (newUser == null) {
-            throw new RuntimeException("User not found: " + userId);
+            throw new RuntimeException("User not found: " + email);
         }
 
         TeamMember newMember = new TeamMember();
@@ -314,53 +316,52 @@ public class TeamServiceImpl extends BaseService implements TeamService {
     }
 
     @Override
-    public TeamDetailRes getTeamByUser(int userId) {
+    public List<TeamDetailRes> getTeamsByUser(int userId) {
 
-        // Lấy tất cả team mà user thuộc (owner hoặc member)
         List<Team> teams = teamRepository.getTeams(userId);
 
         if (teams == null || teams.isEmpty()) {
             throw new EntityNotFoundException("Không tìm thấy team nào của user " + userId);
         }
 
-        // Chọn 1 team để trả về (ở đây lấy team đầu tiên)
-        // Nếu muốn ưu tiên team mà user là owner thì có thể filter trước.
-        Team team = teams.get(0);
+        return teams.stream()
+                .map(this::buildTeamDetailRes)
+                .toList();
+    }
 
-        // BUILD DTO KHÔNG DÙNG MAPPER
-        TeamDetailRes dto = new TeamDetailRes();
-        dto.setId(team.getId());
-        dto.setName(team.getName());
-        dto.setDescription(team.getDescription());
-        dto.setCreatedAt(team.getCreatedAt());
-        dto.setUpdatedAt(team.getUpdatedAt());
+    private TeamDetailRes buildTeamDetailRes(Team team) {
 
-        // Owner
-        UserDetailRes ownerDto = new UserDetailRes();
-        ownerDto.setId(team.getOwner().getId());
-        ownerDto.setFullname(team.getOwner().getFullName());
-        ownerDto.setEmail(team.getOwner().getEmail());
-        dto.setOwner(ownerDto);
+        User owner = team.getOwner();
 
-        // Members (teamMember)
+        // Lấy member active
         List<TeamMember> members = teamMemberRepository.findByTeam_IdAndDeletedIsNull(team.getId());
 
-        List<TeamMemberRes> memberResList = members.stream()
-                .map(tm -> {
-                    TeamMemberRes m = new TeamMemberRes();
-                    m.setId(tm.getUser().getId());
-                    m.setFullName(tm.getUser().getFullName());
-                    m.setEmail(tm.getUser().getEmail());
-                    m.setAvatarUrl(tm.getUser().getAvatarUrl());
-                    m.setRole(tm.getRole().name());
-                    m.setJoinedAt(tm.getCreatedAt());
-                    return m;
-                })
+        List<TeamMemberRes> memberDtos = members.stream()
+                .map(m -> TeamMemberRes.builder()
+                        .id(m.getUser().getId())
+                        .fullName(m.getUser().getFullName())
+                        .email(m.getUser().getEmail())
+                        .avatarUrl(m.getUser().getAvatarUrl())
+                        .role(m.getRole().name())
+                        .joinedAt(m.getCreatedAt())
+                        .build())
                 .toList();
 
-        dto.setMembers(memberResList);
-
-        return dto;
+        return TeamDetailRes.builder()
+                .id(team.getId())
+                .name(team.getName())
+                .description(team.getDescription())
+                .owner(
+                        UserDetailRes.builder()
+                                .id(owner.getId())
+                                .fullname(owner.getFullName())
+                                .email(owner.getEmail())
+                                .avatarUrl(owner.getAvatarUrl())
+                                .build())
+                .members(memberDtos)
+                .createdAt(team.getCreatedAt())
+                .updatedAt(team.getUpdatedAt())
+                .build();
     }
 
 }

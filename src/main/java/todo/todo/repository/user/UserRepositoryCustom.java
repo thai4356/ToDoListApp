@@ -16,4 +16,6 @@ public interface UserRepositoryCustom {
     User getUserByEmail(String email);
 
     boolean existsByCode (String code);
+
+    
 }

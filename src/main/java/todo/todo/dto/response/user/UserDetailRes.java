@@ -18,4 +18,8 @@ public class UserDetailRes {
     String fullname;
     String avatarUrl;
     String accessToken;
+
+     public int getId() {
+        return id;
+    }
 }
