@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import todo.todo.entity.user.User;
 
 @Data
 @NoArgsConstructor
@@ -16,5 +15,5 @@ import todo.todo.entity.user.User;
 public class AddTeamBaseReq {
     String name;
     String description;
-    User user;
+    int userid;
 }

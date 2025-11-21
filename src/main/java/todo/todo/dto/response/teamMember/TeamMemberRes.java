@@ -1,6 +1,6 @@
 package todo.todo.dto.response.teamMember;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -21,5 +21,5 @@ public class TeamMemberRes {
     String avatarUrl;
     String role;            // 'owner', 'admin', 'member'
 
-    LocalDateTime joinedAt;
+    Date joinedAt;
 }

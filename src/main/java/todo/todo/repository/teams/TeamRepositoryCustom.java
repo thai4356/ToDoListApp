@@ -17,4 +17,6 @@ public interface TeamRepositoryCustom {
     Team getTeamToUpdate(int teamId);
 
     List<TeamMember> findByTeam_IdAndDeletedAtIsNull(int teamId);
+
+    List<Team> getTeams (int userId);
 }

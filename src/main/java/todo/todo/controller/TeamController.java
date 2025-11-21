@@ -92,4 +92,10 @@ public class TeamController {
 
     public record UpdateRoleReq(@NotBlank String role) {
     }
+
+    @GetMapping("/by-user")
+    public ResponseEntity<TeamDetailRes> getTeamByUser(
+            @RequestParam int userId) {
+        return ResponseEntity.ok(teamService.getTeamByUser(userId));
+    }
 }

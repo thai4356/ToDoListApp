@@ -1,11 +1,11 @@
 package todo.todo.service.team;
 
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import jakarta.persistence.EntityNotFoundException;
 import todo.todo.dto.request.team.AddTeamBaseReq;
 import todo.todo.dto.response.team.TeamDetailRes;
 import todo.todo.dto.response.teamMember.TeamMemberRes;
@@ -76,48 +76,47 @@ public class TeamServiceImpl extends BaseService implements TeamService {
     }
 
     @Override
-public TeamDetailRes UpdateTeam(AddTeamBaseReq request, int foundId, int currentUserId) {
-    Team team = teamRepository.findById(foundId)
-            .orElseThrow(() -> new RuntimeException("Team not found: " + foundId));
+    public TeamDetailRes UpdateTeam(AddTeamBaseReq request, int foundId, int currentUserId) {
+        Team team = teamRepository.findById(foundId)
+                .orElseThrow(() -> new RuntimeException("Team not found: " + foundId));
 
-    if (request.getName() != null && !request.getName().isEmpty()) {
-        team.setName(request.getName());
+        if (request.getName() != null && !request.getName().isEmpty()) {
+            team.setName(request.getName());
+        }
+        if (request.getDescription() != null && !request.getDescription().isEmpty()) {
+            team.setDescription(request.getDescription());
+        }
+
+        teamRepository.save(team);
+
+        List<TeamMember> members = teamMemberRepository.findActiveByTeam(team.getId());
+        List<TeamMemberRes> memberDtos = members.stream()
+                .map(m -> TeamMemberRes.builder()
+                        .id(m.getUser().getId())
+                        .fullName(m.getUser().getFullName())
+                        .email(m.getUser().getEmail())
+                        .avatarUrl(m.getUser().getAvatarUrl())
+                        .role(m.getRole().name())
+                        .joinedAt(m.getCreatedAt())
+                        .build())
+                .toList();
+
+        User owner = team.getOwner();
+        return TeamDetailRes.builder()
+                .id(team.getId())
+                .name(team.getName())
+                .description(team.getDescription())
+                .owner(UserDetailRes.builder()
+                        .id(owner != null ? owner.getId() : 0)
+                        .fullname(owner != null ? owner.getFullName() : null)
+                        .email(owner != null ? owner.getEmail() : null)
+                        .avatarUrl(owner != null ? owner.getAvatarUrl() : null)
+                        .build())
+                .members(memberDtos)
+                .createdAt(team.getCreatedAt())
+                .updatedAt(team.getUpdatedAt())
+                .build();
     }
-    if (request.getDescription() != null && !request.getDescription().isEmpty()) {
-        team.setDescription(request.getDescription());
-    }
-
-    teamRepository.save(team);
-
-    List<TeamMember> members = teamMemberRepository.findActiveByTeam(team.getId());
-    List<TeamMemberRes> memberDtos = members.stream()
-            .map(m -> TeamMemberRes.builder()
-                    .id(m.getUser().getId())
-                    .fullName(m.getUser().getFullName())
-                    .email(m.getUser().getEmail())
-                    .avatarUrl(m.getUser().getAvatarUrl())
-                    .role(m.getRole().name())
-                    .joinedAt(m.getCreatedAt() == null ? null
-                            : m.getCreatedAt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
-                    .build())
-            .toList();
-
-    User owner = team.getOwner();
-    return TeamDetailRes.builder()
-            .id(team.getId())
-            .name(team.getName())
-            .description(team.getDescription())
-            .owner(UserDetailRes.builder()
-                    .id(owner != null ? owner.getId() : 0)
-                    .fullname(owner != null ? owner.getFullName() : null)
-                    .email(owner != null ? owner.getEmail() : null)
-                    .avatarUrl(owner != null ? owner.getAvatarUrl() : null)
-                    .build())
-            .members(memberDtos)
-            .createdAt(team.getCreatedAt())
-            .updatedAt(team.getUpdatedAt())
-            .build();
-}
 
     @Override
     public TeamDetailRes DeleteTeam(int teamId, int currentUserId) {
@@ -236,9 +235,7 @@ public TeamDetailRes UpdateTeam(AddTeamBaseReq request, int foundId, int current
                 .email(u.getEmail())
                 .avatarUrl(u.getAvatarUrl())
                 .role(roleEnum.name())
-                .joinedAt(member.getCreatedAt() != null
-                        ? member.getCreatedAt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
-                        : null)
+                .joinedAt(member.getCreatedAt())
                 .build();
     }
 
@@ -314,6 +311,56 @@ public TeamDetailRes UpdateTeam(AddTeamBaseReq request, int foundId, int current
                 .avatarUrl(target.getUser().getAvatarUrl())
                 .role(target.getRole().name())
                 .build();
+    }
+
+    @Override
+    public TeamDetailRes getTeamByUser(int userId) {
+
+        // Lấy tất cả team mà user thuộc (owner hoặc member)
+        List<Team> teams = teamRepository.getTeams(userId);
+
+        if (teams == null || teams.isEmpty()) {
+            throw new EntityNotFoundException("Không tìm thấy team nào của user " + userId);
+        }
+
+        // Chọn 1 team để trả về (ở đây lấy team đầu tiên)
+        // Nếu muốn ưu tiên team mà user là owner thì có thể filter trước.
+        Team team = teams.get(0);
+
+        // BUILD DTO KHÔNG DÙNG MAPPER
+        TeamDetailRes dto = new TeamDetailRes();
+        dto.setId(team.getId());
+        dto.setName(team.getName());
+        dto.setDescription(team.getDescription());
+        dto.setCreatedAt(team.getCreatedAt());
+        dto.setUpdatedAt(team.getUpdatedAt());
+
+        // Owner
+        UserDetailRes ownerDto = new UserDetailRes();
+        ownerDto.setId(team.getOwner().getId());
+        ownerDto.setFullname(team.getOwner().getFullName());
+        ownerDto.setEmail(team.getOwner().getEmail());
+        dto.setOwner(ownerDto);
+
+        // Members (teamMember)
+        List<TeamMember> members = teamMemberRepository.findByTeam_IdAndDeletedIsNull(team.getId());
+
+        List<TeamMemberRes> memberResList = members.stream()
+                .map(tm -> {
+                    TeamMemberRes m = new TeamMemberRes();
+                    m.setId(tm.getUser().getId());
+                    m.setFullName(tm.getUser().getFullName());
+                    m.setEmail(tm.getUser().getEmail());
+                    m.setAvatarUrl(tm.getUser().getAvatarUrl());
+                    m.setRole(tm.getRole().name());
+                    m.setJoinedAt(tm.getCreatedAt());
+                    return m;
+                })
+                .toList();
+
+        dto.setMembers(memberResList);
+
+        return dto;
     }
 
 }

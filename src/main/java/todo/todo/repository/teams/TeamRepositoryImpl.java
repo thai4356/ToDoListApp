@@ -3,6 +3,7 @@ package todo.todo.repository.teams;
 import java.util.List;
 
 import jakarta.persistence.EntityNotFoundException;
+import todo.todo.entity.team_member.QTeamMember;
 import todo.todo.entity.team_member.TeamMember;
 import todo.todo.entity.teams.QTeam;
 import todo.todo.entity.teams.Team;
@@ -14,17 +15,26 @@ public class TeamRepositoryImpl extends BaseRepository implements TeamRepository
 
     private final QUser qUser = QUser.user;
     private final QTeam qTeam = QTeam.team;
+    private final QTeamMember qTeamMember = QTeamMember.teamMember;
 
     @Override
     public User getHolderId(String id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getHolderId'");
+        return query()
+                .select(qUser)
+                .from(qUser)
+                .where(qUser.id.stringValue().eq(id))
+                .fetchOne();
     }
 
     @Override
     public boolean existsByCode(String code) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'existsByCode'");
+        Integer result = query()
+                .selectOne()
+                .from(qTeam)
+                .where(qTeam.name.eq(code))
+                .fetchFirst();
+
+        return result != null;
     }
 
     @Override
@@ -53,8 +63,33 @@ public class TeamRepositoryImpl extends BaseRepository implements TeamRepository
 
     @Override
     public List<TeamMember> findByTeam_IdAndDeletedAtIsNull(int teamId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findByTeam_IdAndDeletedAtIsNull'");
+        return query()
+                .select(qTeamMember)
+                .from(qTeamMember)
+                .where(
+                        qTeamMember.team.id.eq(teamId),
+                        qTeamMember.deleted.isTrue())
+                .fetch();
+    }
+
+    @Override
+    public List<Team> getTeams(int userId) {
+        List<Team> teams = query()
+                .select(qTeam)
+                .from(qTeam)
+                .leftJoin(qTeamMember).on(qTeamMember.team.id.eq(qTeam.id))
+                .where(
+                        qTeam.owner.id.eq(userId) // owner
+                                .or(qTeamMember.user.id.eq(userId)) // member
+                )
+                .distinct() // tránh duplicate do join
+                .fetch();
+
+        if (teams.isEmpty()) {
+            throw new EntityNotFoundException("User " + userId + " không thuộc bất kỳ team nào");
+        }
+
+        return teams;
     }
 
 }
