@@ -135,7 +135,7 @@ public class JwtTokenProvider {
 
 
     private PublicKey generateJwtKeyDecryption() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
-        String PUBLIC_KEY_PATH = "oauth-key/oauth-public.key";
+        String PUBLIC_KEY_PATH = "keys/oauth-public.key";
         try (Reader reader = new FileReader(PUBLIC_KEY_PATH); PEMParser pemParser = new PEMParser(reader)) {
             Object object = pemParser.readObject();
             Security.addProvider(new BouncyCastleProvider());
@@ -152,7 +152,7 @@ public class JwtTokenProvider {
     }
 
     private PrivateKey generateJwtKeyEncryption() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
-        String PRIVATE_KEY_PATH = "oauth-key/oauth-private.key";
+        String PRIVATE_KEY_PATH = "keys/oauth-private.key";
         try (Reader reader = new FileReader(PRIVATE_KEY_PATH); PEMParser pemParser = new PEMParser(reader)) {
             Object object = pemParser.readObject();
             Security.addProvider(new BouncyCastleProvider());
