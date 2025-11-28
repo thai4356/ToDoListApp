@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import todo.todo.security.interceptor.TrackLogRequestInterceptor;
 import todo.todo.security.interceptor.UserInterCeptor;
 
-
 @Configuration
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
@@ -43,8 +42,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(trackLogRequestInterceptor).addPathPatterns("/**");
         registry.addInterceptor(userInterceptor).addPathPatterns("/api/v*/**")
-                .excludePathPatterns("/api/v*/auth/**",
-                        "/api/v*/media/**");
+                .excludePathPatterns(
+            "/api/v*/auth/**",
+                        "/api/v*/media/**",
+                        "/api/v*/team/invite/accept",
+                        "/api/v*/team/invite/accept/**");
     }
 
     @Override

@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.springframework.stereotype.Repository;
 
+import todo.todo.dto.response.teamMember.TeamMemberRes;
 import todo.todo.entity.team_member.TeamMember;
 import todo.todo.entity.team_member.TeamMember.Role;
 
@@ -19,4 +20,7 @@ public interface TeamMemberRepositoryCustom {
     List<TeamMember> findActiveByTeam(int teamId);
 
     boolean existsOwnerAdminInTeam(int userId, int teamId, Set<Role> roles);
+
+    List<TeamMemberRes> findActiveMemberDtosByTeamId(int teamId);
+
 }

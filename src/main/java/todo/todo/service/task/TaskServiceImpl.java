@@ -56,13 +56,20 @@ public class TaskServiceImpl implements TaskService {
         Task t = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
 
-        if (req.getTitle() != null && !req.getTitle().isBlank()) t.setTitle(req.getTitle());
-        if (req.getDescription() != null) t.setDescription(req.getDescription());
-        if (req.getTeamId() != null) t.setTeam(mustGetTeam(req.getTeamId()));
-        if (req.getAssigneeId() != null) t.setAssignee(mustGetUser(req.getAssigneeId()));
-        if (req.getStatus() != null) t.setStatus(parseStatusOrDefault(req.getStatus(), t.getStatus()));
-        if (req.getPriority() != null) t.setPriority(parsePriorityOrDefault(req.getPriority(), t.getPriority()));
-        if (req.getDueDate() != null) t.setDueDate(req.getDueDate());
+        if (req.getTitle() != null && !req.getTitle().isBlank())
+            t.setTitle(req.getTitle());
+        if (req.getDescription() != null)
+            t.setDescription(req.getDescription());
+        if (req.getTeamId() != null)
+            t.setTeam(mustGetTeam(req.getTeamId()));
+        if (req.getAssigneeId() != null)
+            t.setAssignee(mustGetUser(req.getAssigneeId()));
+        if (req.getStatus() != null)
+            t.setStatus(parseStatusOrDefault(req.getStatus(), t.getStatus()));
+        if (req.getPriority() != null)
+            t.setPriority(parsePriorityOrDefault(req.getPriority(), t.getPriority()));
+        if (req.getDueDate() != null)
+            t.setDueDate(req.getDueDate());
 
         taskRepository.save(t);
         return toRes(t);
@@ -77,7 +84,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public String  deleteTask(int taskId, int currentUserId) {
+    public String deleteTask(int taskId, int currentUserId) {
         Task t = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
         t.setDeleted(true);
@@ -91,7 +98,8 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(readOnly = true)
     public List<TaskDetailRes> listByTeam(int teamId, boolean includeDeleted) {
         List<Task> list = includeDeleted
-                ? taskRepository.findAll().stream().filter(x -> x.getTeam()!=null && x.getTeam().getId()==teamId).toList()
+                ? taskRepository.findAll().stream().filter(x -> x.getTeam() != null && x.getTeam().getId() == teamId)
+                        .toList()
                 : taskRepository.findActiveByTeam(teamId);
         return list.stream().map(this::toRes).toList();
     }
@@ -99,28 +107,43 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public List<TaskDetailRes> search(Integer teamId, Integer assigneeId, String status,
-                                      String priority, LocalDate dueFrom, LocalDate dueTo) {
+            String priority, LocalDate dueFrom, LocalDate dueTo) {
         return taskRepository.search(teamId, assigneeId, status, priority, dueFrom, dueTo)
                 .stream().map(this::toRes).toList();
     }
 
     private User mustGetUser(int id) {
         User u = userRepository.findById(id);
-        if (u == null) throw new RuntimeException("User not found: " + id);
+        if (u == null)
+            throw new RuntimeException("User not found: " + id);
         return u;
     }
+
     private Team mustGetTeam(int id) {
         return teamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Team not found: " + id));
     }
+
     private Task.Status parseStatusOrDefault(String s, Task.Status def) {
-        if (s == null || s.isBlank()) return def;
-        try { return Task.Status.valueOf(s.trim().toLowerCase()); } catch (IllegalArgumentException e) { return def; }
+        if (s == null || s.isBlank())
+            return def;
+        try {
+            return Task.Status.valueOf(s.trim().toLowerCase());
+        } catch (IllegalArgumentException e) {
+            return def;
+        }
     }
+
     private Task.Priority parsePriorityOrDefault(String s, Task.Priority def) {
-        if (s == null || s.isBlank()) return def;
-        try { return Task.Priority.valueOf(s.trim().toLowerCase()); } catch (IllegalArgumentException e) { return def; }
+        if (s == null || s.isBlank())
+            return def;
+        try {
+            return Task.Priority.valueOf(s.trim().toLowerCase());
+        } catch (IllegalArgumentException e) {
+            return def;
+        }
     }
+
     private TaskDetailRes toRes(Task t) {
         return TaskDetailRes.builder()
                 .id(t.getId())
@@ -137,6 +160,7 @@ public class TaskServiceImpl implements TaskService {
                 .deleted(t.isDeleted())
                 .build();
     }
+
     private UserMiniRes toMini(User u) {
         return UserMiniRes.builder()
                 .id(u.getId())
@@ -145,6 +169,7 @@ public class TaskServiceImpl implements TaskService {
                 .avatarUrl(u.getAvatarUrl())
                 .build();
     }
+
     private LocalDateTime toLdt(Date d) {
         return d == null ? null : LocalDateTime.ofInstant(d.toInstant(), ZoneId.systemDefault());
     }

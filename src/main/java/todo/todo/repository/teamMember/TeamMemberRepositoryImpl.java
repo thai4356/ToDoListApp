@@ -3,10 +3,12 @@ package todo.todo.repository.teamMember;
 import java.util.List;
 import java.util.Set;
 
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
+import todo.todo.dto.response.teamMember.TeamMemberRes;
 import todo.todo.entity.team_member.QTeamMember;
 import todo.todo.entity.team_member.TeamMember;
 import todo.todo.entity.team_member.TeamMember.Role;
@@ -80,4 +82,22 @@ public class TeamMemberRepositoryImpl extends BaseRepository implements TeamMemb
                 return found != null;
         }
 
+        @Override
+        public List<TeamMemberRes> findActiveMemberDtosByTeamId(int teamId) {
+                return query()
+                                .select(Projections.constructor(
+                                                TeamMemberRes.class,
+                                                qTeamMember.user.fullName,
+                                                qTeamMember.user.email,
+                                                qTeamMember.user.avatarUrl,
+                                                qTeamMember.role.stringValue(),
+                                                qTeamMember.createdAt))
+                                .from(qTeamMember)
+                                .where(
+                                                qTeamMember.team.id.eq(teamId),
+                                                qTeamMember.deleted.isFalse())
+                                .fetch();
+        }
+
+        
 }

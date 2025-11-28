@@ -38,14 +38,6 @@ public class TeamController {
         this.teamService = teamService;
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<TeamDetailRes> createTeam(
-            @RequestBody AddTeamBaseReq request,
-            @RequestParam int currentUserId) {
-        TeamDetailRes result = teamService.CreateTeam(request, currentUserId);
-        return ResponseEntity.ok(result);
-    }
-
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteTeam(
             @PathVariable int id,
@@ -74,7 +66,7 @@ public class TeamController {
             @RequestParam int currentUserId,
             @RequestBody @Valid AddMemberReq req) {
         return ResponseEntity.ok(
-                teamService.addMemberToTeam(teamId, req.getEmail(), currentUserId));
+                teamService.inviteMember(teamId, req.getEmail(), currentUserId));
     }
 
     @GetMapping("/{id}")
@@ -112,9 +104,7 @@ public class TeamController {
         String token = authHeader.substring(7); // bỏ "Bearer "
 
         Map<String, Object> payload = jwtTokenProvider.getPayload(token);
-        System.out.println(payload);
         Object sub = payload.get("sub");
-        System.out.println(sub);
         if (sub == null) {
             throw new BusinessException("Token không chứa subject (sub)");
         }
@@ -130,4 +120,35 @@ public class TeamController {
         return ResponseEntity.ok(res);
     }
 
+    @PostMapping("/create")
+    public ResponseEntity<TeamDetailRes> createTeam(
+            @RequestBody AddTeamBaseReq request,
+            HttpServletRequest http) {
+
+        String auth = http.getHeader("Authorization");
+        if (auth == null || !auth.startsWith("Bearer ")) {
+            throw new BusinessException("Thiếu header Authorization");
+        }
+
+        String token = auth.substring(7);
+        Map<String, Object> payload = jwtTokenProvider.getPayload(token);
+
+        Object sub = payload.get("sub");
+        if (sub == null)
+            throw new BusinessException("Token không chứa subject (sub)");
+
+        int currentUserId;
+        try {
+            currentUserId = Integer.parseInt(sub.toString());
+        } catch (Exception e) {
+            throw new BusinessException("Subject trong token không hợp lệ");
+        }
+
+        return ResponseEntity.ok(teamService.CreateTeam(request, currentUserId));
+    }
+
+    @GetMapping("/invite/accept")
+    public ResponseEntity<?> acceptInvite(@RequestParam String token) {
+        return ResponseEntity.ok(teamService.acceptInvite(token));
+    }
 }

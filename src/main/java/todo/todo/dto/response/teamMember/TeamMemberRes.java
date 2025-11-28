@@ -14,12 +14,11 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TeamMemberRes {
-    int id;                // user_id
+public class TeamMemberRes { 
+    int user_id;
     String fullName;
     String email;
     String avatarUrl;
-    String role;            // 'owner', 'admin', 'member'
-
+    String role;            
     Date joinedAt;
 }

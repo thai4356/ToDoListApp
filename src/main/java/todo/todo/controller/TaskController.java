@@ -59,7 +59,6 @@ public class TaskController {
         return ResponseEntity.ok(msg);
     }
 
-    // List by team
     @GetMapping
     public ResponseEntity<List<TaskDetailRes>> listByTeam(
             @RequestParam int teamId,
@@ -67,6 +66,7 @@ public class TaskController {
         return ResponseEntity.ok(taskService.listByTeam(teamId, includeDeleted));
     }
 
+    
     // Search (optional params)
     @GetMapping("/search")
     public ResponseEntity<List<TaskDetailRes>> search(
