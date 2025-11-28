@@ -1,7 +1,7 @@
 package todo.todo.security;
 
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -23,6 +23,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
@@ -133,38 +134,49 @@ public class JwtTokenProvider {
         return false;
     }
 
+    private PublicKey generateJwtKeyDecryption()
+            throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 
-    private PublicKey generateJwtKeyDecryption() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
-        String PUBLIC_KEY_PATH = "keys/oauth-public.key";
-        try (Reader reader = new FileReader(PUBLIC_KEY_PATH); PEMParser pemParser = new PEMParser(reader)) {
+        ClassPathResource resource = new ClassPathResource("keys/oauth-public.key");
+
+        try (Reader reader = new InputStreamReader(resource.getInputStream());
+                PEMParser pemParser = new PEMParser(reader)) {
+
             Object object = pemParser.readObject();
             Security.addProvider(new BouncyCastleProvider());
             JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+
             if (object instanceof PEMKeyPair keyPair) {
                 return converter.getPublicKey(keyPair.getPublicKeyInfo());
             }
             if (object instanceof SubjectPublicKeyInfo publicKeyInfo) {
                 return converter.getPublicKey(publicKeyInfo);
-            } else {
-                throw new InvalidKeySpecException("Not a valid RSA public key.");
             }
+
+            throw new InvalidKeySpecException("Not a valid RSA public key.");
         }
     }
 
-    private PrivateKey generateJwtKeyEncryption() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
-        String PRIVATE_KEY_PATH = "keys/oauth-private.key";
-        try (Reader reader = new FileReader(PRIVATE_KEY_PATH); PEMParser pemParser = new PEMParser(reader)) {
+    private PrivateKey generateJwtKeyEncryption()
+            throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+
+        ClassPathResource resource = new ClassPathResource("keys/oauth-private.key");
+
+        try (Reader reader = new InputStreamReader(resource.getInputStream());
+                PEMParser pemParser = new PEMParser(reader)) {
+
             Object object = pemParser.readObject();
             Security.addProvider(new BouncyCastleProvider());
             JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+
             if (object instanceof PEMKeyPair keyPair) {
                 return converter.getPrivateKey(keyPair.getPrivateKeyInfo());
             }
             if (object instanceof PrivateKeyInfo privateKeyInfo) {
                 return converter.getPrivateKey(privateKeyInfo);
-            } else {
-                throw new InvalidKeySpecException("Not a valid RSA private key.");
             }
+
+            throw new InvalidKeySpecException("Not a valid RSA private key.");
         }
     }
 
