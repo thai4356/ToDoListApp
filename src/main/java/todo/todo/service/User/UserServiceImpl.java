@@ -178,12 +178,17 @@ public class UserServiceImpl extends BaseService implements UserService {
         return user;
     }
 
-    private UserDetailRes getUserRes(User user) {
-        return UserDetailRes.builder()
-                .id(user.getId())
-                .fullname(user.getFullName())
-                .email(user.getEmail())
-                .avatarUrl(user.getAvatarUrl())
-                .build();
+    public UserDetailRes getUserRes(User user) {
+        UserDetailRes res = new UserDetailRes();
+        res.setId(user.getId());
+        res.setFullname(user.getFullName());
+        res.setEmail(user.getEmail());
+        res.setAccessToken(user.getCode());
+        res.setAvatarUrl(user.getAvatarUrl());
+        res.setAvaId(
+                user.getAvatarFile() != null ? user.getAvatarFile().getId() : null);
+        res.setCreatedAt(user.getCreatedAt());
+        res.setUpdatedAt(user.getUpdatedAt());
+        return res;
     }
 }

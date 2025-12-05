@@ -1,5 +1,7 @@
 package todo.todo.dto.response.user;
 
+import java.util.Date;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,8 +21,10 @@ public class UserDetailRes {
     String avatarUrl;
     String accessToken;
     int avaId;
-    
-     public int getId() {
+    private Date createdAt;
+    private Date updatedAt;
+
+    public int getId() {
         return id;
     }
 }
