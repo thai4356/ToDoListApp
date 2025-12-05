@@ -1,5 +1,7 @@
 package todo.todo.dto.response.user;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,7 +15,7 @@ public class RegisterUser {
     String email;
     String fullname;
     String avatarUrl;
-
+    
     @NotNull(message = "codeId must not be null")
     int codeId;
     @NotBlank
@@ -27,4 +29,6 @@ public class RegisterUser {
     public boolean isValid() {
         return password.equals(confirmPassword);
     }
+
+    MultipartFile avatar;
 }

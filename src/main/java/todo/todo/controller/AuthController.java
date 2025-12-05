@@ -1,12 +1,15 @@
 package todo.todo.controller;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import todo.todo.dto.request.UserLoginReq;
 import todo.todo.dto.request.otp.SendOtpReq;
@@ -27,16 +30,18 @@ public class AuthController {
         this.otpService = otpService;
         this.userService = userService;
     }
-    
+
     @Operation(summary = "Login")
     @PostMapping("v1/auth/login")
     public ResponseEntity<BaseResponse<UserDetailRes>> loginUser(@RequestBody @Valid UserLoginReq request) {
         return ResponseEntity.ok(new BaseResponse<>(userService.login(request)));
     }
 
-    @Operation(summary = "Register")
-    @PostMapping("v1/auth/register")
-    public ResponseEntity<BaseResponse<UserDetailRes>> registerUser(@RequestBody @Valid RegisterUser request) {
+    @PostMapping(value = "v1/auth/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<BaseResponse<UserDetailRes>> registerUser(
+            @ModelAttribute @Valid RegisterUser request,
+            HttpServletRequest httpRequest 
+    ) {
         return ResponseEntity.ok(new BaseResponse<>(userService.register(request)));
     }
 

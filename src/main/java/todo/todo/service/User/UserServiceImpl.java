@@ -18,13 +18,16 @@ import todo.todo.dto.response.user.RegisterUser;
 import todo.todo.dto.response.user.UserDetailRes;
 import todo.todo.dto.response.user.UserListRes;
 import todo.todo.entity.otp.Otp;
+import todo.todo.entity.upload_file.UploadFile;
 import todo.todo.entity.user.User;
 import todo.todo.exceptions.BusinessException;
+import todo.todo.repository.media.MediaRepository;
 import todo.todo.repository.otp.OtpRepository;
 import todo.todo.repository.user.UserRepository;
 import todo.todo.security.JwtTokenProvider;
 import todo.todo.security.SecurityContexts;
 import todo.todo.service.BaseService;
+import todo.todo.service.file.FileStorageService;
 import todo.todo.util.Util;
 
 @Service
@@ -34,23 +37,27 @@ public class UserServiceImpl extends BaseService implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final OtpRepository otpRepository;
+    private final MediaRepository mediaRepository;
+    private final FileStorageService fileStorageService;
+
     @Value("${app.jwtAdminExpirationInMs}")
     private int jwtExpirationInMs;
 
     private final int OTP_EXPIRY_IN_MINUTES = 5;
 
-    private int uid() {
-        return getUser().getId();
-    }
-
-    public UserServiceImpl(JwtTokenProvider jwtTokenProvider,
-            OtpRepository otpRepository,
-            PasswordEncoder passwordEncoder,
+    public UserServiceImpl(FileStorageService fileStorageService, JwtTokenProvider jwtTokenProvider,
+            MediaRepository mediaRepository, OtpRepository otpRepository, PasswordEncoder passwordEncoder,
             UserRepository userRepository) {
+        this.fileStorageService = fileStorageService;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.mediaRepository = mediaRepository;
         this.otpRepository = otpRepository;
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
+    }
+
+    private int uid() {
+        return getUser().getId();
     }
 
     @Override
@@ -74,13 +81,20 @@ public class UserServiceImpl extends BaseService implements UserService {
         return userLoginRes;
     }
 
-    private UserDetailRes getUserRes(User user) {
-        return UserDetailRes.builder()
-                .id(user.getId())
-                .fullname(user.getFullName())
-                .email(user.getEmail())
-                .avatarUrl(user.getAvatarUrl())
-                .build();
+    public static UserDetailRes from(User user) {
+        UserDetailRes res = new UserDetailRes();
+        res.setId(user.getId());
+        res.setFullname(user.getFullName());
+        res.setEmail(user.getEmail());
+
+        if (user.getAvatarFile() != null) {
+            res.setAvaId(user.getAvatarFile().getId());
+            res.setAvatarUrl(user.getAvatarFile().getThumbUrl() != null
+                    ? user.getAvatarFile().getThumbUrl()
+                    : user.getAvatarFile().getOriginUrl());
+        }
+
+        return res;
     }
 
     @Override
@@ -130,7 +144,17 @@ public class UserServiceImpl extends BaseService implements UserService {
         user.setUpdatedAt(new Date());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         userRepository.save(user);
+        if (request.getAvatar() != null && !request.getAvatar().isEmpty()) {
 
+            UploadFile avatar = fileStorageService.storeImage(request.getAvatar());
+            avatar.setUser(user);
+            avatar.setCreatedAt(new Date());
+            avatar.setUpdatedAt(new Date());
+            mediaRepository.save(avatar);
+
+            user.setAvatarFile(avatar);
+            userRepository.save(user);
+        }
         UserDetailRes userLoginRes = getUserRes(user);
         userLoginRes
                 .setAccessToken(jwtTokenProvider.generateTokenRs256(String.valueOf(user.getId()), jwtExpirationInMs));
@@ -149,8 +173,17 @@ public class UserServiceImpl extends BaseService implements UserService {
     }
 
     @Override
-    public User getUserByEmail () {
+    public User getUserByEmail() {
         User user = getUser();
         return user;
+    }
+
+    private UserDetailRes getUserRes(User user) {
+        return UserDetailRes.builder()
+                .id(user.getId())
+                .fullname(user.getFullName())
+                .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
+                .build();
     }
 }

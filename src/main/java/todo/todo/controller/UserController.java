@@ -44,7 +44,6 @@ public class UserController {
         BaseResponse<User> res = new BaseResponse<>();
         res.setMessage("success");
         res.setData(u);
-
         return ResponseEntity.ok(res);
     }
 }
